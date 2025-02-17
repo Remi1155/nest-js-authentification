@@ -10,6 +10,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RequestWithUser } from 'src/types/requestWithUser';
 import { UserService } from 'src/user/user.service';
+import { CreateUserDto } from 'src/dto/createUserDto';
 
 export type AuthBody = { email: string; password: string };
 
@@ -27,8 +28,19 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
+  /*
+  RequestWithUser = {
+    user: UserPayload;
+  };
+  UserPayload = { userId: string };
+  */
   async authenticate(@Request() request: RequestWithUser) {
     console.log(request.user.userId);
     return await this.userService.findOne(request.user.userId);
+  }
+
+  @Post('register')
+  register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
   }
 }

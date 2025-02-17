@@ -4,6 +4,7 @@ import { AuthBody } from './auth.controller';
 import { hash, compare } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { UserPayload } from 'src/types/userPayload';
+import { CreateUserDto } from 'src/dto/createUserDto';
 
 @Injectable()
 export class AuthService {
@@ -31,7 +32,33 @@ export class AuthService {
       throw new Error('Le mot de passe est incorrecte');
     }
 
-    return this.authenticateUser({ userId: user.id });
+    return this.authenticateUser(user.id);
+  }
+
+  /*******************************/
+
+  async register(createUserDto: CreateUserDto) {
+    const { name, email, password } = createUserDto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (user) {
+      throw new Error('Cet email est déjà associé à un utilisateur');
+    }
+
+    const hashedPassword = await this.hashPassword(password);
+
+    const createdUser = await this.prisma.user.create({
+      data: {
+        email: email,
+        name: name,
+        password: hashedPassword,
+      },
+    });
+
+    return this.authenticateUser(createdUser.id);
   }
 
   /*******************************/
@@ -48,8 +75,9 @@ export class AuthService {
 
   /*******************************/
 
-  private authenticateUser({ userId }: UserPayload) {
+  private authenticateUser(userId: string) {
     const payload: UserPayload = { userId };
+    // UserPayload = { userId: string };
     return {
       access_token: this.jwtService.sign(payload),
     };
